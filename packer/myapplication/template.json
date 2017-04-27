@@ -1,0 +1,52 @@
+{
+    "variables": {
+        "source_ami": "",
+        "region": "",
+        "version": ""
+    },
+    "builders": [{
+        "type": "amazon-ebs",
+        "region": "{{user `region`}}",
+        "source_ami": "{{user `source_ami`}}",
+        "ssh_pty": true,
+        "instance_type": "t2.micro",
+        "ssh_username": "ubuntu",
+        "ssh_timeout": "5m",
+        "associate_public_ip_address": true,
+        "ami_virtualization_type": "hvm",
+        "ami_name": "application_instance-{{isotime \"2006-01-02-1504\"}}",
+        "tags": {
+            "Version": "{{user `version`}}"
+        }
+    }],
+    "provisioners": [
+        {
+            "type": "shell",
+            "start_retry_timeout": "10m",
+            "inline": [
+                "sudo apt-get update -y",
+                "sudo apt-get install -y ntp nginx"
+            ]
+        },
+        {
+            "type": "file",
+            "source": "application-files/nginx.conf",
+            "destination": "/tmp/nginx.conf"
+        },
+        {
+            "type": "file",
+            "source": "application-files/index.html",
+            "destination": "/tmp/index.html"
+        },
+        {
+            "type": "shell",
+            "start_retry_timeout": "5m",
+            "inline": [
+                "sudo mkdir -p /usr/share/nginx/html",
+                "sudo mv /tmp/index.html /usr/share/nginx/html/index.html",
+                "sudo mv /tmp/nginx.conf /etc/nginx/nginx.conf",
+                "sudo systemctl enable nginx.service"
+            ]
+        }
+    ]
+}
